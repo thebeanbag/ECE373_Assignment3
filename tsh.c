@@ -247,7 +247,37 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv)
 {
-  return;
+  struct job_t *job; //creates temporary job structure
+  // job = getjobpid(jobs,pid); //set job equal to job with current pid
+
+  /*EDGE CASES*/
+  if(argv[1] == NULL) return;
+
+  if(argv[1] == '%'){
+    job = getjobjid(jobs,(int)&argv[2]);
+    if(job==NULL){
+      return;
+    }
+  }
+
+  if(scanf("%d", &argv[0]) < 0){
+    job = getjobpid(jobs,(int)&argv[1]);
+    if(job==NULL){
+      return;
+    }
+  }
+
+  /*Do stuff with bg fg*/  
+  if(strcmp(argv[0],"bg")==0){ 
+    job->state = BG;
+    kill(-job->pid,SIGCONT);
+  }
+  
+  if(strcmp(argv[0],"fg")==0){
+    job->state = FG;
+    kill(-job->pid,SIGCONT);
+    waitfg(job->pid); 
+  }
 }
 
 /* 
