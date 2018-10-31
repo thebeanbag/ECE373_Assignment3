@@ -277,10 +277,20 @@ void sigchld_handler(int sig)
   while(1){
     pid = waitpid(-1,&status, WNOHANG);
     if(pid <= 0) break; //all zombie children have been reaped
+
+    if(WIFEXITED(status)) deletejob(jobs, pid);
     
+    if(WIFSTOPPED(status)){
+      printf("Job [%d] (%d) stopped by signal %d",pid2jid(pid),pid,sig);\
+      struct job_t *job;
+      job = getjobpid(jobs,pid);
+      job->state = T;
+    }
+    if(WIFSIGNALED(status)){
+       printf("Job [%d] (%d) terminated by signal %d",pid2jid(pid),pid,sig);
+       deletejob(jobs, pid);
+    }
   }
-  
-    return;
 }
 
 /* 
@@ -292,7 +302,7 @@ void sigint_handler(int sig)
 {
   int pid = fgpid(jobs);
   if(pid!=0) kill(-pid,SIGINT);
-  printf("Job [%d] (%d) terminated by signal %d",pid2jid(pid),pid,sig);
+  
 }
 
 /*
@@ -304,7 +314,6 @@ void sigtstp_handler(int sig)
 {
   int pid = fgpid(jobs);
   if(pid!=0) kill(-pid,SIGTSTP);
-  printf("Job [%d] (%d) stopped by signal %d",pid2jid(pid),pid,sig);
 }
 
 /*********************
