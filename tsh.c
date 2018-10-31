@@ -284,7 +284,7 @@ void sigchld_handler(int sig)
       printf("Job [%d] (%d) stopped by signal %d",pid2jid(pid),pid,sig);\
       struct job_t *job;
       job = getjobpid(jobs,pid);
-      job->state = T;
+      job->state = ST;
     }
     if(WIFSIGNALED(status)){
        printf("Job [%d] (%d) terminated by signal %d",pid2jid(pid),pid,sig);
