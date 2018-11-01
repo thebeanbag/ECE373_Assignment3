@@ -302,20 +302,27 @@ int builtin_cmd(char **argv) {
 void do_bgfg(char **argv) {
     struct job_t *job; //creates temporary job structure
     // job = getjobpid(jobs,pid); //set job equal to job with current pid
+    int jid;
+    char *jobnum = argv[1];
+
+   // execve(*(argv[0]),*(argv),environ);
 
     /*EDGE CASES*/
     if (argv[1] == NULL) return;
 
-    if (argv[1] == '%') {
-        job = getjobjid(jobs, (int) &argv[2]);
-        if (job == NULL) {
+    if (jobnum[0] == '%') {
+        jid = atoi(&jobnum[1]);
+        if (!(job = getjobjid(jobs, jid))) {
+            printf("%s: No such job\n", jobnum);
             return;
         }
     }
 
-    if (scanf("%d", &argv[0]) < 0) {
-        job = getjobpid(jobs, (int) &argv[1]);
+    else if (isdigit(jobnum[0])) {
+        pid_t pid=atoi(jobnum);
+        job = getjobpid(jobs, pid);
         if (job == NULL) {
+            printf("(%d): No such process\n", pid);
             return;
         }
     }
@@ -323,12 +330,13 @@ void do_bgfg(char **argv) {
     /*Do stuff with bg fg*/
     if (strcmp(argv[0], "bg") == 0) {
         job->state = BG;
-        kill(-job->pid, SIGCONT);
+        printf("[%d] (%d) %s\n", job->jid, job->pid, job->cmdline);
+        //kill(-job->pid, SIGCONT);
     }
 
-    if (strcmp(argv[0], "fg") == 0) {
+    else if (strcmp(argv[0], "fg") == 0) {
         job->state = FG;
-        kill(-job->pid, SIGCONT);
+        kill(-(job->pid), SIGCONT);
         waitfg(job->pid);
     }
 }
@@ -352,6 +360,7 @@ void waitfg(pid_t pid) {
  *     currently running children to terminate.  
  */
 void sigchld_handler(int sig) {
+
     pid_t pid; //process id
     int status; //status of process
 
@@ -363,14 +372,14 @@ void sigchld_handler(int sig) {
 
         if (WIFSTOPPED(status)) {  //if job stopped
             printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid,
-                   sig); //prints out notice that job has been stopped
+                   20); //prints out notice that job has been stopped
             struct job_t *job; //creates temporary job structure
             job = getjobpid(jobs, pid); //set job equal to job with current pid
             job->state = ST; //sets job state to stopped
         }
         if (WIFSIGNALED(status)) { //if job terminated
             printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid,
-                   sig); //prints out notice that job has been terminated
+                   2); //prints out notice that job has been terminated
             deletejob(jobs, pid); //deletes job
         }
     }
@@ -382,8 +391,9 @@ void sigchld_handler(int sig) {
  *    to the foreground job.  
  */
 void sigint_handler(int sig) {
+
     int pid = fgpid(jobs); //gets pid of foreground process
-    if (pid != 0) kill(-pid, SIGINT); //kills the foreground job if it exists
+    if (pid != 0) kill(-pid, sig); //kills the foreground job if it exists
 
 }
 
@@ -394,7 +404,7 @@ void sigint_handler(int sig) {
  */
 void sigtstp_handler(int sig) {
     int pid = fgpid(jobs); //gets pid of foreground process
-    if (pid != 0) kill(-pid, SIGTSTP); //suspends the foreground job if it exists
+    if (pid != 0) kill(-pid, sig); //suspends the foreground job if it exists
 }
 
 /*********************
