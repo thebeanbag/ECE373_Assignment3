@@ -165,6 +165,40 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS];
+    char buf[MAXLINE];
+    int bg;
+    pid_t pid;
+
+
+    strcpy(buf,cmdline);
+    bg = parseline(buf, argv);
+    if (argv[0] == NULL)
+        return;
+
+    if (!builtin_cmd(argv)){
+        if((pid = fork()) == 0) {
+
+            if(execve(argv[0], argv, environ) < 0) {
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+
+        }
+
+        if(!bg){
+            int status;
+            if(waitpid(pid, &status, 0) < 0)
+
+                unix_error("waitfg: waitpid error");
+
+        }
+
+        else
+            printf("[%d] (%d) %s",pid2jid(pid), pid, cmdline);
+
+    }
+    addjob(jobs, pid, BG, buf);
     return;
 }
 
@@ -233,11 +267,11 @@ int builtin_cmd(char **argv)
 {
   //quit,fg,bg,jobs
   
-  if(strcmp(argv[0],"quit")==0) exit(0); return 1; //if user typed 'quit' exit shell
+  if(strcmp(argv[0],"quit")==0) {exit(0); return 1;} //if user typed 'quit' exit shell
 
-  if(strcmp(argv[0],"bg")==0 || strcmp(argv[0],"fg")==0) do_bgfg(argv); return 1; //if user typed 'bg' execute 'do_bgfg' method and return 1;
+  if(strcmp(argv[0],"bg")==0 || strcmp(argv[0],"fg")==0){ do_bgfg(argv); return 1;} //if user typed 'bg' execute 'do_bgfg' method and return 1;
 
-  if(strcmp(argv[0],"jobs")==0) listjobs(jobs); return 1; //if user typed 'jobs' execute 'listjobs' method and return 1;
+  if(strcmp(argv[0],"jobs")==0) {listjobs(jobs); return 1;} //if user typed 'jobs' execute 'listjobs' method and return 1;
 
   return 0; //else return 0;
 }
@@ -561,7 +595,7 @@ handler_t *Signal(int signum, handler_t *handler)
  */
 void sigquit_handler(int sig) 
 {
-    printf("Terminating after receipt of SIGQUIT signal\n");
+    printf("Terminating after receipt of LIGMA signal\n");
     exit(1);
 }
 
